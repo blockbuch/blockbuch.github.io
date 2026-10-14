@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Block-Logbuch</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0f17; --bg2:#111827; --panel:rgba(255,255,255,.04); --line:rgba(255,255,255,.08);
+  --text:#e8ecf3; --muted:#8b95a7; --accent:#22c55e; --danger:#ef4444;
+  --grad:linear-gradient(135deg,#22c55e,#3b82f6); --shadow:0 8px 30px rgba(0,0,0,.25);
+}
+@media (prefers-color-scheme: light){
+  :root{--bg:#f6f7fb;--bg2:#ffffff;--panel:#ffffff;--line:#e5e8ef;--text:#111827;--muted:#6b7280;--shadow:0 6px 24px rgba(17,24,39,.06)}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased}
+header{padding:48px 16px 28px;text-align:center;background:radial-gradient(60% 120% at 50% 0%,rgba(34,197,94,.18),transparent 70%)}
+h1{font-size:clamp(28px,7vw,44px);font-weight:800;letter-spacing:-.03em;margin:0;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+header p{margin:8px 0 0;color:var(--muted)}
+nav{display:flex;gap:6px;overflow-x:auto;padding:10px 16px;position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line);scrollbar-width:none;justify-content:safe center}
+nav::-webkit-scrollbar{display:none}
+button{font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--text);padding:9px 14px;border-radius:999px;transition:all .18s ease}
+button:hover{border-color:var(--accent);transform:translateY(-1px)}
+nav button{flex:0 0 auto;border-color:transparent;background:transparent;color:var(--muted)}
+nav button.active{background:var(--text);color:var(--bg)}
+.chips button.active{background:var(--accent);border-color:var(--accent);color:#fff}
+button.primary{background:var(--grad);color:#fff;border:none}
+button.danger{color:var(--danger);border-color:rgba(239,68,68,.4);background:transparent}
+main{max-width:980px;margin:0 auto;padding:20px 16px}
+section{display:none;animation:fade .25s ease}
+section.show{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+h2{font-size:22px;font-weight:800;letter-spacing:-.02em;margin:8px 0 16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:var(--shadow)}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.grid .card{margin-bottom:0}
+input,select,textarea{font-family:inherit;font-size:16px;width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:12px;background:var(--bg2);color:var(--text);outline:none;transition:border .15s}
+input:focus,select:focus{border-color:var(--accent)}
+label{font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
+.row{display:grid;gap:10px;grid-template-columns:1fr 1fr 1fr}
+.row2{display:grid;gap:10px;grid-template-columns:1fr 1fr}
+.stack>*{margin-bottom:12px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.tag{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--line);color:var(--muted);margin:4px 4px 0 0}
+.dim-o{background:rgba(34,197,94,.15);color:#22c55e}.dim-n{background:rgba(239,68,68,.15);color:#ef4444}.dim-e{background:rgba(168,85,247,.15);color:#a855f7}
+.coord{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:15px}
+.muted{color:var(--muted);font-size:14px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.chips button{padding:7px 13px;font-size:13px}
+.craft{display:flex;align-items:center;gap:14px;margin:14px 0}
+.table3{display:grid;grid-template-columns:repeat(3,42px);gap:5px}
+.slot{width:42px;height:42px;border-radius:10px;background:var(--line);display:flex;align-items:center;justify-content:center}
+.item{width:34px;height:34px;border-radius:9px;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;color:#111;box-shadow:inset 0 -2px 0 rgba(0,0,0,.15)}
+.arrow{font-size:20px;color:var(--muted)}
+.result{min-width:60px;text-align:center}
+.legend{font-size:13px;color:var(--muted)}
+.big{font-size:18px;font-weight:600;min-height:56px}
+.empty{text-align:center;color:var(--muted);padding:28px;border:1px dashed var(--line);border-radius:18px}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:32px 16px}
+@media(max-width:520px){.row2{grid-template-columns:1fr}}
+</style>
+
+</head>
+<body>
+<header>
+  <h1>Block-Logbuch</h1>
+  <p>Koordinaten, Rezepte, Bauideen, Tipps & Fakten</p>
+</header>
+<nav id="nav">
+  <button data-tab="koords" class="active">📍 Koordinaten</button>
+  <button data-tab="rezepte">🛠 Rezepte</button>
+  <button data-tab="ideen">🏠 Bauideen</button>
+  <button data-tab="tipps">💡 Vorschläge</button>
+  <button data-tab="fakten">📚 Fakten</button>
+</nav>
+
+<main>
+<!-- KOORDINATEN -->
+<section id="koords" class="show">
+  <h2>Meine Koordinaten</h2>
+  <div class="card stack">
+    <div><label>Name</label><input id="cName" placeholder="z.B. Meine Basis, Dorf, Netherportal"></div>
+    <div class="row">
+      <div><label>X</label><input id="cX" type="number" inputmode="numeric"></div>
+      <div><label>Y</label><input id="cY" type="number" inputmode="numeric"></div>
+      <div><label>Z</label><input id="cZ" type="number" inputmode="numeric"></div>
+    </div>
+    <div class="row2">
+      <div><label>Dimension</label>
+        <select id="cDim"><option value="o">Oberwelt</option><option value="n">Nether</option><option value="e">Ende</option></select></div>
+      <div><label>Welt (optional)</label><input id="cWorld" placeholder="z.B. Survival-Welt"></div>
+    </div>
+    <div><label>Notiz (optional)</label><input id="cNote" placeholder="z.B. Diamanten in der Nähe"></div>
+    <div class="actions"><button class="primary" id="cSave">💾 Speichern</button></div>
+  </div>
+  <div class="card">
+    <input id="cSearch" placeholder="🔍 Koordinaten durchsuchen…">
+    <div class="actions">
+      <button id="cExport">⬇ Sichern (Datei)</button>
+      <button id="cImportBtn">⬆ Laden (Datei)</button>
+      <input type="file" id="cImport" accept=".json" hidden>
+    </div>
+    <p class="muted">Die Koordinaten werden in deinem Browser gespeichert. Mach ab und zu eine Sicherung als Datei.</p>
+  </div>
+  <div id="cList"></div>
+</section>
+
+<!-- REZEPTE -->
+<section id="rezepte">
+  <h2>Baurezepte</h2>
+  <input id="rSearch" placeholder="🔍 Rezept suchen, z.B. Truhe">
+  <div class="chips" id="rCats" style="margin-top:10px"></div>
+  <div class="grid" id="rList"></div>
+</section>
+
+<!-- BAUIDEEN -->
+<section id="ideen">
+  <h2>Bauideen</h2>
+  <div class="chips" id="iCats"></div>
+  <div class="actions" style="margin-bottom:12px"><button class="primary" id="iRandom">🎲 Zufällige Idee</button></div>
+  <div id="iHighlight"></div>
+  <div class="grid" id="iList"></div>
+</section>
+
+<!-- VORSCHLÄGE -->
+<section id="tipps">
+  <h2>Was mache ich heute?</h2>
+  <div class="card">
+    <p class="big" id="tOut">Drück den Knopf für einen Vorschlag!</p>
+    <div class="actions"><button class="primary" id="tBtn">🎲 Neuer Vorschlag</button></div>
+  </div>
+  <h2>Profi-Tipps</h2>
+  <div class="grid" id="tList"></div>
+</section>
+
+<!-- FAKTEN -->
+<section id="fakten">
+  <h2>Fakten</h2>
+  <div class="card">
+    <p class="big" id="fOut">Drück den Knopf für einen Zufallsfakt!</p>
+    <div class="actions"><button class="primary" id="fBtn">🎲 Zufallsfakt</button></div>
+  </div>
+  <div class="grid" id="fList"></div>
+</section>
+</main>
+
+<footer>Inoffizielle Fan-Seite. Nicht mit Mojang oder Microsoft verbunden.</footer>
+
+<script>
+/* ---------- Tabs ---------- */
+document.querySelectorAll('#nav button').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('#nav button').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('section').forEach(s=>s.classList.remove('show'));
+    b.classList.add('active');
+    document.getElementById(b.dataset.tab).classList.add('show');
+    window.scrollTo({top:0,behavior:'smooth'});
+  };
+});
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+
+/* ---------- Koordinaten ---------- */
+const KEY='blocklogbuch_koords';
+let coords=[];
+function load(){try{coords=JSON.parse(localStorage.getItem(KEY))||[]}catch(e){coords=[]}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(coords))}catch(e){alert('Speichern im Browser nicht möglich – nutze "Sichern (Datei)".')}}
+const DIM={o:'Oberwelt',n:'Nether',e:'Ende'};
+function renderCoords(){
+  const q=$('cSearch').value.toLowerCase();
+  const list=coords.filter(c=>(c.name+' '+c.note+' '+c.world).toLowerCase().includes(q));
+  if(!list.length){$('cList').innerHTML='<div class="empty">Noch keine Koordinaten gespeichert.</div>';return}
+  $('cList').innerHTML=list.map(c=>{
+    let conv='';
+    if(c.dim==='o')conv=`Im Nether: <span class="coord">${Math.floor(c.x/8)} / ${c.y} / ${Math.floor(c.z/8)}</span>`;
+    if(c.dim==='n')conv=`In der Oberwelt: <span class="coord">${c.x*8} / ${c.y} / ${c.z*8}</span>`;
+    return `<div class="card">
+      <strong>${esc(c.name)}</strong> <span class="tag dim-${c.dim}">${DIM[c.dim]}</span>${c.world?`<span class="tag">${esc(c.world)}</span>`:''}
+      <div class="coord" style="font-size:18px;margin:6px 0">X ${c.x} &nbsp; Y ${c.y} &nbsp; Z ${c.z}</div>
+      ${c.note?`<div class="muted">📝 ${esc(c.note)}</div>`:''}
+      ${conv?`<div class="muted">🔁 ${conv}</div>`:''}
+      <div class="actions">
+        <button onclick="copyTp('${c.id}')">📋 /tp kopieren</button>
+        <button class="danger" onclick="delCoord('${c.id}')">🗑 Löschen</button>
+      </div></div>`;
+  }).join('');
+}
+$('cSave').onclick=()=>{
+  const name=$('cName').value.trim(), x=$('cX').value, y=$('cY').value, z=$('cZ').value;
+  if(!name||x===''||y===''||z===''){alert('Bitte Name, X, Y und Z ausfüllen.');return}
+  coords.unshift({id:Date.now().toString(36),name,x:+x,y:+y,z:+z,dim:$('cDim').value,world:$('cWorld').value.trim(),note:$('cNote').value.trim()});
+  save();renderCoords();
+  ['cName','cX','cY','cZ','cNote'].forEach(i=>$(i).value='');
+};
+function delCoord(id){if(confirm('Wirklich löschen?')){coords=coords.filter(c=>c.id!==id);save();renderCoords()}}
+function copyTp(id){
+  const c=coords.find(c=>c.id===id), t=`/tp @s ${c.x} ${c.y} ${c.z}`;
+  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>alert('Kopiert: '+t)).catch(()=>prompt('Zum Kopieren:',t));
+}
+$('cSearch').oninput=renderCoords;
+$('cExport').onclick=()=>{
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(coords,null,2)],{type:'application/json'}));
+  a.download='koordinaten.json';a.click();
+};
+$('cImportBtn').onclick=()=>$('cImport').click();
+$('cImport').onchange=e=>{
+  const f=e.target.files[0];if(!f)return;
+  f.text().then(t=>{try{const d=JSON.parse(t);if(Array.isArray(d)){coords=d;save();renderCoords();alert('Geladen!')}}catch(err){alert('Datei konnte nicht gelesen werden.')}});
+};
+load();renderCoords();
+
+/* ---------- Rezepte ---------- */
+const IT={
+ pl:['Holzbretter','#c49a5a','Br'], st:['Stock','#7a5230','St'], ko:['Kohle','#333','Ko'], bs:['Bruchstein','#8a8a8a','Bs'],
+ ei:['Eisenbarren','#e6e6e6','Ei'], di:['Diamant','#4fe3e0','Di'], go:['Goldbarren','#f5c542','Go'], wo:['Wolle','#f4f4f4','Wo'],
+ wz:['Weizen','#d9b44a','Wz'], mi:['Milcheimer','#ffffff','Mi'], zu:['Zucker','#fafafa','Zu'], eg:['Ei','#f3e6c8','Eg'],
+ sp:['Schwarzpulver','#5a5a5a','Sp'], sa:['Sand','#e8d9a0','Sa'], rs:['Redstone','#d0302b','Rs'], ob:['Obsidian','#3a2560','Ob'],
+ bu:['Buch','#9b4a2f','Bu'], ns:['Netherstern','#fff7c0','Ns'], ek:['Eisenklumpen','#cfcfcf','Ek'], fa:['Fackel','#ffb347','Fa'],
+ fd:['Faden','#ededed','Fd'], eb:['Eisenblock','#d4d4d4','EB'], tr:['Truhe','#a0702a','Tr'], hs:['Holzstufe','#c49a5a','Hs'],
+ gl:['Glas','#bfe6f0','Gl']
+};
+const RZ=[
+ ['Werkbank','Grundlagen','pl pl . pl pl . . . .',1],
+ ['Stöcke','Grundlagen','pl . . pl . . . . .',4],
+ ['Fackel','Grundlagen','ko . . st . . . . .',4],
+ ['Truhe','Grundlagen','pl pl pl pl . pl pl pl pl',1],
+ ['Ofen','Grundlagen','bs bs bs bs . bs bs bs bs',1],
+ ['Holzspitzhacke','Werkzeuge & Waffen','pl pl pl . st . . st .',1],
+ ['Steinspitzhacke','Werkzeuge & Waffen','bs bs bs . st . . st .',1],
+ ['Eisenspitzhacke','Werkzeuge & Waffen','ei ei ei . st . . st .',1],
+ ['Diamantspitzhacke','Werkzeuge & Waffen','di di di . st . . st .',1],
+ ['Diamantschwert','Werkzeuge & Waffen','. di . . di . . st .',1],
+ ['Eisenaxt','Werkzeuge & Waffen','ei ei . ei st . . st .',1],
+ ['Eisenschaufel','Werkzeuge & Waffen','. ei . . st . . st .',1],
+ ['Bogen','Werkzeuge & Waffen','. st fd st . fd . st fd',1],
+ ['Angel','Werkzeuge & Waffen','. . st . st fd st . fd',1],
+ ['Schild','Werkzeuge & Waffen','pl ei pl pl pl pl . pl .',1],
+ ['Eimer','Werkzeuge & Waffen','ei . ei . ei . . . .',1],
+ ['Kompass','Werkzeuge & Waffen','. ei . ei rs ei . ei .',1],
+ ['Uhr','Werkzeuge & Waffen','. go . go rs go . go .',1],
+ ['Bett','Möbel & Deko','. . . wo wo wo pl pl pl',1],
+ ['Holztür','Möbel & Deko','pl pl . pl pl . pl pl .',3],
+ ['Leiter','Möbel & Deko','st . st st st st st . st',3],
+ ['Laterne','Möbel & Deko','ek ek ek ek fa ek ek ek ek',1],
+ ['Bücherregal','Möbel & Deko','pl pl pl bu bu bu pl pl pl',1],
+ ['Fass','Möbel & Deko','pl hs pl pl . pl pl hs pl',1],
+ ['Boot','Möbel & Deko','pl . pl pl pl pl . . .',1],
+ ['Kolben','Redstone & Technik','pl pl pl bs ei bs bs rs bs',1],
+ ['Trichter','Redstone & Technik','ei . ei ei tr ei . ei .',1],
+ ['Schiene','Redstone & Technik','ei . ei ei st ei ei . ei',16],
+ ['TNT','Redstone & Technik','sp sa sp sa sp sa sp sa sp',1],
+ ['Brot','Essen','wz wz wz . . . . . .',1],
+ ['Kuchen','Essen','mi mi mi zu eg zu wz wz wz',1],
+ ['Zaubertisch','Magie','. bu . di ob di ob ob ob',1],
+ ['Amboss','Magie','eb eb eb . ei . ei ei ei',1],
+ ['Leuchtfeuer','Magie','gl gl gl gl ns gl ob ob ob',1]
+];
+let rCat='Alle';
+const rCats=['Alle',...new Set(RZ.map(r=>r[1]))];
+$('rCats').innerHTML=rCats.map(c=>`<button data-c="${c}" class="${c==='Alle'?'active':''}">${c}</button>`).join('');
+$('rCats').onclick=e=>{if(e.target.dataset.c){rCat=e.target.dataset.c;[...$('rCats').children].forEach(b=>b.classList.toggle('active',b===e.target));renderR()}};
+function renderR(){
+  const q=$('rSearch').value.toLowerCase();
+  const list=RZ.filter(r=>(rCat==='Alle'||r[1]===rCat)&&r[0].toLowerCase().includes(q));
+  $('rList').innerHTML=list.length?list.map(([n,cat,g,out])=>{
+    const cells=g.split(' ');
+    const used=[...new Set(cells.filter(c=>c!=='.'))];
+    return `<div class="card"><strong>${n}</strong> <span class="tag">${cat}</span>
+      <div class="craft"><div class="table3">${cells.map(c=>`<div class="slot">${c==='.'?'':`<div class="item" title="${IT[c][0]}" style="background:${IT[c][1]}">${IT[c][2]}</div>`}</div>`).join('')}</div>
+      <span class="arrow">➜</span><div class="result"><strong>${out}×</strong><br><span class="muted">${n}</span></div></div>
+      <div class="legend">${used.map(c=>`<b>${IT[c][2]}</b> = ${IT[c][0]}`).join(' · ')}</div></div>`;
+  }).join(''):'<div class="empty">Kein Rezept gefunden.</div>';
+}
+$('rSearch').oninput=renderR;renderR();
+
+/* ---------- Bauideen ---------- */
+const ID=[
+ ['Gemütliche Holzhütte','Häuser','Leicht','Fichtenholz-Stämme als Rahmen, Eichenbretter für Wände, Treppen als Dach. Blumentöpfe und Laternen machen sie gemütlich.'],
+ ['Mittelalterliche Burg','Häuser','Schwer','Steinziegel-Mauern mit Türmen an den Ecken, Zugbrücke über einen Wassergraben und ein großer Thronsaal.'],
+ ['Baumhaus','Häuser','Mittel','Ein riesiger Baum aus Dschungelholz mit mehreren Plattformen, verbunden durch Leitern und Hängebrücken.'],
+ ['Unterwasser-Basis','Häuser','Schwer','Glaskuppeln am Meeresgrund, beleuchtet mit Seelaternen. Tipp: Erst mit Sand auffüllen, dann Wasser entfernen.'],
+ ['Japanischer Tempel','Häuser','Mittel','Geschwungene Dächer aus Treppen und Stufen, Kirschholz und Laternen. Dazu ein kleiner Koi-Teich.'],
+ ['Moderne Villa','Häuser','Mittel','Weißer Beton, große Glasflächen, flaches Dach mit Pool. Klare, gerade Linien.'],
+ ['Automatische Farm','Farmen','Mittel','Weizen- oder Karottenfeld mit einem Dorfbewohner (Bauer), der erntet und Items in einen Trichter wirft.'],
+ ['Kuh- & Schaf-Gehege','Farmen','Leicht','Zäune, eine kleine Scheune und ein Wasserbecken. Getrennte Bereiche für jedes Tier.'],
+ ['Zuckerrohr-Farm','Farmen','Mittel','Mit Beobachtern und Kolben baust du eine Farm, die von selbst erntet.'],
+ ['Bienenhaus mit Blumenwiese','Farmen','Leicht','Bienenstöcke in einem Garten voller Blumen. Mit Lagerfeuer darunter kannst du sicher Honig ernten.'],
+ ['Dorf-Marktplatz','Deko','Mittel','Marktstände mit farbiger Wolle als Dach, ein Brunnen in der Mitte und Fässer mit Waren.'],
+ ['Netherportal-Torbogen','Deko','Leicht','Rahme dein Portal mit Schwarzstein, Ketten und Seelenfeuer-Laternen ein.'],
+ ['Leuchtturm','Deko','Mittel','Rot-weißer Turm an der Küste, oben ein Leuchtfeuer oder Glowstone hinter Glas.'],
+ ['Pixel-Art','Deko','Leicht','Plane ein Bild auf Karopapier und baue es mit Wolle oder Beton riesig an eine Wand.'],
+ ['Achterbahn','Redstone','Mittel','Schienen mit Antriebsschienen und einer Redstone-Fackel. Loopings sind nicht möglich, aber Höhen und Tunnel schon!'],
+ ['Geheimtür','Redstone','Mittel','Bücherregal-Wand, die sich per Hebel oder Knopf mit klebrigen Kolben öffnet.'],
+ ['Sortieranlage','Redstone','Schwer','Trichter und Komparatoren sortieren deine Items automatisch in die richtigen Truhen.'],
+ ['Schwebende Insel','Abenteuer','Schwer','Eine Insel hoch in der Luft mit Wasserfall, Bäumen und kleinem Haus. Wurzeln aus Erde hängen nach unten.']
+];
+let iCat='Alle';
+const iCats=['Alle',...new Set(ID.map(i=>i[1]))];
+$('iCats').innerHTML=iCats.map(c=>`<button data-c="${c}" class="${c==='Alle'?'active':''}">${c}</button>`).join('');
+$('iCats').onclick=e=>{if(e.target.dataset.c){iCat=e.target.dataset.c;[...$('iCats').children].forEach(b=>b.classList.toggle('active',b===e.target));renderI()}};
+const ideaCard=([n,c,d,t],hl)=>`<div class="card" ${hl?'style="border-color:var(--accent);box-shadow:0 0 0 3px rgba(34,197,94,.15)"':''}><strong>${n}</strong><br><span class="tag">${c}</span><span class="tag">${d==='Leicht'?'🟢':d==='Mittel'?'🟡':'🔴'} ${d}</span><p class="muted">${t}</p></div>`;
+function renderI(){$('iList').innerHTML=ID.filter(i=>iCat==='Alle'||i[1]===iCat).map(i=>ideaCard(i)).join('')}
+$('iRandom').onclick=()=>{$('iHighlight').innerHTML=ideaCard(pick(ID),true)};
+renderI();
+
+/* ---------- Vorschläge ---------- */
+const TODO=[
+ 'Erkunde einen Ozean-Monument und hol dir die Schwämme.','Baue dir eine Mine bis auf Y −58 und suche Diamanten.',
+ 'Zähme einen Wolf, eine Katze und ein Pferd an einem Tag.','Finde ein Dorf und handle mit einem Bibliothekar um Mending.',
+ 'Überlebe eine Nacht ohne Bett und ohne Unterschlupf.','Baue ein Haus nur aus Blöcken, die du in einer Wüste findest.',
+ 'Sammle jede Blumenart und bau einen Garten.','Finde eine Festung im Nether und hol dir Lohenruten.',
+ 'Baue eine Brücke über eine ganze Schlucht.','Finde die Antike Stadt in der Tiefe – aber leise schleichen!',
+ 'Baue eine Eisen-Farm für endlos Eisen.','Fülle ein ganzes Buch mit deinen Abenteuern (Buch und Feder).',
+ 'Starte eine Hardcore-Welt und schau, wie weit du kommst.','Besiege den Enderdrachen.',
+ 'Baue eine eigene Zug-Linie zwischen zwei Basen.','Erkunde eine Waldmansion und finde den geheimen Raum.',
+ 'Züchte ein Axolotl in jeder Farbe, die du findest.','Baue nur mit einer Farbe ein ganzes Gebäude.',
+ 'Mach eine Schatzsuche: Vergrabe etwas und notiere die Koordinaten hier!','Verzaubere eine komplette Diamantrüstung.'
+];
+const TIPS=[
+ ['Nie gerade nach unten graben','Du könntest in Lava oder eine Höhle fallen. Grabe besser treppenförmig.'],
+ ['Wasser-Eimer = Lebensretter','Platzier Wasser direkt vor dem Aufprall, dann bekommst du keinen Fallschaden.'],
+ ['Bett im Nether? Lieber nicht!','Betten explodieren im Nether und im Ende.'],
+ ['Silk Touch & Behutsamkeit','Damit baust du Glas, Erze und Eis als ganzen Block ab.'],
+ ['Kürbis gegen Endermen','Mit geschnitzem Kürbis auf dem Kopf kannst du Endermen ansehen, ohne dass sie angreifen.'],
+ ['Nether als Abkürzung','1 Block im Nether = 8 Blöcke in der Oberwelt. Ideal für schnelle Reisen.'],
+ ['Fackeln gegen Monster','Monster spawnen nur im Dunkeln. Gut beleuchtete Bereiche sind sicher.'],
+ ['F3 / Koordinaten','Auf dem PC zeigt F3 deine Koordinaten. Auf Konsole/Handy: Weltoption „Koordinaten anzeigen“.']
+];
+$('tBtn').onclick=()=>{$('tOut').textContent='👉 '+pick(TODO)};
+$('tList').innerHTML=TIPS.map(([t,d])=>`<div class="card"><strong>${t}</strong><p class="muted">${d}</p></div>`).join('');
+
+/* ---------- Fakten ---------- */
+const FAKTEN=[
+ 'Der Creeper entstand aus einem Fehler: Eigentlich sollte es ein Schwein werden, aber Höhe und Länge wurden vertauscht.',
+ 'Ein Minecraft-Tag dauert 20 Minuten echte Zeit.',
+ 'Minecraft ist das meistverkaufte Videospiel aller Zeiten.',
+ 'Die ersten Versionen erschienen 2009, die Vollversion am 18. November 2011.',
+ 'Microsoft hat Mojang 2014 für 2,5 Milliarden US-Dollar gekauft.',
+ 'Die Geräusche des Ghasts stammen von der Katze des Komponisten C418.',
+ 'Seit Version 1.18 reicht die Welt von Y −64 bis Y 320.',
+ 'Diamanten findest du am häufigsten ganz unten, etwa auf Y −58.',
+ 'Wird ein Schwein vom Blitz getroffen, wird es zum Zombifizierten Piglin.',
+ 'Wird ein Dorfbewohner vom Blitz getroffen, wird er zur Hexe.',
+ 'Ein Schaf mit dem Namen „jeb_“ wechselt ständig die Farbe.',
+ 'Mobs mit dem Namen „Dinnerbone“ oder „Grumm“ stehen auf dem Kopf.',
+ 'Creeper und Phantome haben Angst vor Katzen.',
+ 'Endermen hassen Wasser und nehmen darin Schaden.',
+ 'Netherit-Gegenstände verbrennen nicht in Lava.',
+ 'Axolotl stellen sich tot, wenn sie verletzt sind, und erholen sich dabei.',
+ 'Ein Schneegolem besteht aus 2 Schneeblöcken und einem Kürbis.',
+ 'Einen Eisengolem baust du aus 4 Eisenblöcken in T-Form und einem Kürbis.',
+ '1 Block im Nether entspricht 8 Blöcken in der Oberwelt.',
+ 'Ein Block in Minecraft ist ungefähr 1 Meter groß.'
+];
+$('fBtn').onclick=()=>{$('fOut').textContent='💡 '+pick(FAKTEN)};
+$('fList').innerHTML=FAKTEN.map(f=>`<div class="card">${f}</div>`).join('');
+</script>
+</body>
+</html>
